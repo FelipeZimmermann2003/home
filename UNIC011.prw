@@ -289,7 +289,8 @@ Static Function ViewDef()
     oView:EnableTitleView( "VIEW_TMPCABE" , "Pesquisa Produto")
     oView:EnableTitleView( "VIEW_TMPGRID" , "Retorno Pesquisa - Clicar 2 X para incluir na Grid")
     oView:EnableTitleView( "VIEW_SZ3GRID1", "POA"             )
-    oView:EnableTitleView( "VIEW_SZ3GRID2", "Cachoeirinha"    )
+    //oView:EnableTitleView( "VIEW_SZ3GRID2", "Cachoeirinha"    )
+    oView:EnableTitleView( "VIEW_SZ3GRID2", "SP"    )
     oView:EnableTitleView( "VIEW_SZ3GRID3", "Itajaí"          )
 
 Return oView 
@@ -397,8 +398,20 @@ Static Function DEFPRODUTO()
         EndIf   
         
         //Filial Cachoerinha      
-        DbSelectArea("SB2")
+        /*DbSelectArea("SB2")
         If SB2->(MsSeek("0104" + cCodProdut + cLoc04))
+            nSaldo04    := SaldoSb2()
+            nVlrPrd04   := SB2->B2_CM1
+        Else
+            nSaldo04    := 0
+            nVlrPrd04   := 0 
+        EndIf        
+        oGRIDSZ32:SetValue("Z5_PRODUTO" , cCodProdut  )
+        */
+
+        //Filial SP      
+        DbSelectArea("SB2")
+        If SB2->(MsSeek("0106" + cCodProdut + cLoc04))
             nSaldo04    := SaldoSb2()
             nVlrPrd04   := SB2->B2_CM1
         Else
