@@ -28,24 +28,31 @@ User Function SX5Nota()
 
 	Local lReturn := .T.
 
-	If cEmpAnt == '01' .and. cFilAnt == '0101'
+	If cEmpAnt == '01' .and. cFilAnt == '0101'			// Matriz RS
 
 		lReturn := .F.
 		If AllTrim( X5_CHAVE ) == '001'
 		
 			lReturn := .t.
 		EndIf
-	ElseIf cEmpAnt == '01' .and. cFilAnt == '0104'
+	ElseIf cEmpAnt == '01' .and. cFilAnt == '0104'		// Filial Cachoeirinha RS
 	
 		lReturn := .F.
 		If AllTrim( X5_CHAVE ) == '001'
 		
 			lReturn := .t.
 		EndIf
-	ElseIf cEmpAnt == '01' .and. cFilAnt == '0105'
+	ElseIf cEmpAnt == '01' .and. cFilAnt == '0105'		// Filial Itajaí SC
 	
 		lReturn := .F.
 		If AllTrim( X5_CHAVE ) == '001'
+		
+			lReturn := .t.
+		EndIf
+	ElseIf cEmpAnt == '01' .and. cFilAnt == '0106'		// Filial Cajamar SP
+	
+		lReturn := .F.
+		If AllTrim( X5_CHAVE ) == '003'
 		
 			lReturn := .t.
 		EndIf
