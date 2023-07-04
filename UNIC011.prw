@@ -408,7 +408,7 @@ Static Function DEFPRODUTO()
         EndIf        
         oGRIDSZ32:SetValue("Z5_PRODUTO" , cCodProdut  )
         */
-
+ //
         //Filial SP      
         DbSelectArea("SB2")
         If SB2->(MsSeek("0106" + cCodProdut + cLoc04))
