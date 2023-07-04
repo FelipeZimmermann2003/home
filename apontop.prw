@@ -108,7 +108,7 @@ User Function APONTOP(_cEmpFil)
 
 						MsAguarde({|| EnderPRD(CodPA, nTotAber)},"Aguarde","Realizando Endereçamento do Produto...",.F.)
 
-						MsAguarde({|| TransARM(CodPA, _nLote, _dDtValid, nTotAber)},"Aguarde","Realizando Transferência Armazém...",.F.)
+						//MsAguarde({|| TransARM(CodPA, _nLote, _dDtValid, nTotAber)},"Aguarde","Realizando Transferência Armazém...",.F.)
 					EndIf
 
 					If !_lVAguarde
@@ -350,7 +350,7 @@ Static Function TransARM(_cProd,_cNumLote,_dDataVld,_nQtde)
     aAdd(aAuto,aLinha)
 
 	nOpcAuto := 3 // Inclusao
-	MSExecAuto({|x,y| mata261(x,y)},aAuto,nOpcAuto)
+	//MSExecAuto({|x,y| mata261(x,y)},aAuto,nOpcAuto)
 
 	If lMsErroAuto
 		MostraErro()
