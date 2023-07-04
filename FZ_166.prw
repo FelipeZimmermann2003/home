@@ -23,7 +23,6 @@ Static __aOldTela :={}
 */
 User Function FZ_166()
 	Local aTela
-	Local nOpc
 	//IF !Type("lVT100B") == "L"
 	//	Private lVT100B := .F.
 	//EndIf
@@ -44,18 +43,13 @@ Static Function ACDV166X(nOpc)
 	Local cKey12  := VTDescKey(12)
 	Local cKey16  := VTDescKey(16)
 	Local cKey22  := VTDescKey(22)
-	Local cKey24  := VTDescKey(24)
 	Local cKey21  := VTDescKey(21)
 	Local bKey04  := VTSetKey(04)
 	Local bKey09  := VTSetKey(09)
 	Local bKey12  := VTSetKey(12)
 	Local bKey16  := VTSetKey(16)
 	Local bKey22  := VTSetKey(22)
-	Local bKey24  := VTSetKey(24)
 	Local bKey21  := VTSetKey(21)
-	Local lRetPE  := .T.
-	Local lACD166VL     := ExistBlock("ACD166VL")
-	Local lACD166VI     := ExistBlock("ACD166VI")
 	Private cCodOpe     := CBRetOpe()
 	Private cImp        := CBRLocImp("MV_IACD01")
 	Private cNota
@@ -70,10 +64,10 @@ Static Function ACDV166X(nOpc)
 	Private cEndereco   := Space(TamSX3("BF_LOCALIZ")[1])
 	Private nSaldoCB8   := 0
 	Private cVolume     := Space(TamSX3("CB9_VOLUME")[1])
-	Private cCodSep     := Space(TamSX3("CB9_ORDSEP")[1])
+	Private cCodSep     := Space(TamSX3("CB9_ORDSEP")[1]+1)
 
 	If Type("cOrdSep")=="U"
-		Private cOrdSep := Space(TamSX3("CB9_ORDSEP")[1])
+		Private cOrdSep := Space(TamSX3("CB9_ORDSEP")[1]+1)
 	EndIf
 	__aOldTela :={}
 	__nSem := 0 // variavel static do fonte para controle de semaforo
@@ -377,7 +371,7 @@ Static Function AglutCB8(cOrdSep,cArm,cEnd,cProd,cLote,cSLote,cNumSer)
 Return nSaldo
 
 Static Function EtiProduto()
-	Local cEtiProd 	:= Space(TamSx3("B1_DUNCAIX")[1])
+	Local cEtiProd 	:= Space(TamSx3("B1_DUNCAIX")[1]+1)
 	Local nQtde 	:= 1
 	Local bKey16 	:= VtSetKey(16)
 	Local lDiverge 	:= .F.
@@ -805,8 +799,6 @@ Static function VldVolume()
 	Local cCodEmb := Space(3)
 	Local aRet    := {}
 	Local aTela   := {}
-	Local cRet
-	Local lACD166V1
 	Private cCodVol
 	IF !Type("lVT100B") == "L"
 		Private lVT100B := .F.
@@ -1080,145 +1072,164 @@ Return .t.
 */
 Static Function VldProduto(cEtiCB0,cEtiProd,nQtde)
 	Local cCodCB0
-	Local nP 		:= 0
-	Local cEtiqueta
-	Local aEtiqueta := {}
-	Local aItensPallet:= {}
-	Local lIsPallet := .T.
 	Local cMsg 		:= ""
 	Local lErrQTD 	:= .F.
 
 	DEFAULT cEtiCB0   := Space(TamSx3("CB0_CODET2")[1])
 	DEFAULT cEtiProd  := Space(48)
 	DEFAULT nQtde     := 1
+	If !Empty(cEtiProd)
+		//VtAlert(cEtiProd,"PRODUTO",.t.,4000)
 
-	cAliasSB1 := GetNextAlias()
-	_cQuery := " SELECT B1_COD FROM SB1010 SB1 "
-	_cQuery += " WHERE B1_FILIAL = '"+xFilial("SB1")+"' "
-	_cQuery += " AND SB1.D_E_L_E_T_ <> '*' "
-	_cQuery += " AND B1_DUNCAIX = '"+Alltrim(cEtiProd)+"' "
-	DbUseArea(.t., 'TOPCONN', TcGenQry (,, _CQUERY), cAliasSB1, .f., .t.)
-	If (cAliasSB1)->(!Eof())
-		cEtiProd := (cAliasSB1)->B1_COD
-
-		If __PulaItem
-			Return .t.
-		EndIf
-
-		If Empty(cEtiCB0+cEtiProd)
-			Return .f.
-		EndIf
-
-
-		aItensPallet := CBItPallet(cEtiProd)
-
-		//If Len(aItensPallet) == 0
-		//	If UsaCB0("01")
-		//		aItensPallet:={cEtiCB0}
-		//	Else
-		//		aItensPallet:={cEtiProd}
-		//	EndIf
-		//	lIsPallet := .f.
-		//EndIf
-
-		Begin Sequence
-			//For nP:= 1 to Len(aItensPallet)
-			//cEtiqueta:= aItensPallet[nP]
-
-			cCodCB0  := Space(10)
-			//aEtiqueta := CBRetEtiEan(cEtiqueta)
-			//If len(aEtiqueta) == 0
-			//	cMsg := "Etiqueta invalida"  //"Etiqueta invalida"
-			//	Break
-			//Else
-			_nConv := Posicione("SB1",1,xFilial("SB1")+cEtiProd,"SB1->B1_CONV")
-			//EndIf
-			nQtdeO := _nConv*nQtde
-			nQtdeT := _nConv*nQtde
-			_nReg := 0
-			If Select("_TRB01") # 0
-				_TRB01->(dbCloseArea())
+		cAliasSB1 := GetNextAlias()
+		_cQuery := " SELECT B1_COD FROM SB1010 SB1 "
+		_cQuery += " WHERE B1_FILIAL = '"+xFilial("SB1")+"' "
+		_cQuery += " AND SB1.D_E_L_E_T_ <> '*' "
+		_cQuery += " AND B1_DUNCAIX = '"+Alltrim(cEtiProd)+"' "
+		DbUseArea(.t., 'TOPCONN', TcGenQry (,, _CQUERY), cAliasSB1, .f., .t.)
+		If (cAliasSB1)->(!Eof())
+			cEtiProd := (cAliasSB1)->B1_COD
+			//VtAlert(cEtiProd,"PRODUTO X",.t.,4000)
+			If __PulaItem
+				Return .t.
 			EndIf
-			_cQuery := " SELECT SUM(CB8_SALDOS) AS SALDO, CB8.R_E_C_N_O_ AS REG FROM CB8010 CB8 "
-			_cQuery += " WHERE CB8_FILIAL = '"+xFilial("CB8")+"' "
-			_cQuery += " AND CB8_ORDSEP = '"+cCodSep+"' "
-			_cQuery += " AND CB8_PROD = '"+cEtiProd+"' "
-			_cQuery += " AND CB8_SALDOS > 0 "
-			_cQuery += " AND CB8.D_E_L_E_T_ <> '*' "
-			_cQuery += " GROUP BY CB8.R_E_C_N_O_
-			DbUseArea(.t., 'TOPCONN', TcGenQry (,, _CQUERY), "_TRB01", .f., .t.)
-			DbSelectArea("_TRB01")
-			DbGoTop()
-			If _TRB01->(Eof())
-				cMsg := "Produto diferente"
-				VtAlert(cMsg,"Aviso",.t.,4000,4)
-				Break
-			Else
-				_nQtdSep := 0
-				Do While _TRB01->(!Eof())
-					_nQtdSep += _TRB01->SALDO
-					_TRB01->(DbSkip())
-				EndDo
-				If _nQtdSep >= nQtdeT
-					DbSelectArea("_TRB01")
-					DbGoTop()
+
+			If Empty(cEtiCB0+cEtiProd)
+				Return .f.
+			EndIf
+
+
+			aItensPallet := CBItPallet(cEtiProd)
+
+			//If Len(aItensPallet) == 0
+			//	If UsaCB0("01")
+			//		aItensPallet:={cEtiCB0}
+			//	Else
+			//		aItensPallet:={cEtiProd}
+			//	EndIf
+			//	lIsPallet := .f.
+			//EndIf
+
+			Begin Sequence
+				//For nP:= 1 to Len(aItensPallet)
+				//cEtiqueta:= aItensPallet[nP]
+
+				cCodCB0  := Space(10)
+				//aEtiqueta := CBRetEtiEan(cEtiqueta)
+				//If len(aEtiqueta) == 0
+				//	cMsg := "Etiqueta invalida"  //"Etiqueta invalida"
+				//	Break
+				//Else
+				_nConv := Posicione("SB1",1,xFilial("SB1")+cEtiProd,"SB1->B1_CONV")
+				//EndIf
+				nQtdeO := _nConv*nQtde
+				nQtdeT := _nConv*nQtde
+				_nReg := 0
+				If Select("_TRB01") # 0
+					_TRB01->(dbCloseArea())
+				EndIf
+				_cQuery := " SELECT SUM(CB8_SALDOS) AS SALDO, CB8.R_E_C_N_O_ AS REG FROM CB8010 CB8 "
+				_cQuery += " WHERE CB8_FILIAL = '"+xFilial("CB8")+"' "
+				_cQuery += " AND CB8_ORDSEP = '"+cCodSep+"' "
+				_cQuery += " AND CB8_PROD = '"+cEtiProd+"' "
+				//_cQuery += " AND CB8_SALDOS > 0 "
+				_cQuery += " AND CB8.D_E_L_E_T_ <> '*' "
+				_cQuery += " GROUP BY CB8.R_E_C_N_O_
+				DbUseArea(.t., 'TOPCONN', TcGenQry (,, _CQUERY), "_TRB01", .f., .t.)
+				DbSelectArea("_TRB01")
+				DbGoTop()
+				If _TRB01->(Eof())
+					cMsg := "Produto diferente "+Alltrim(cCodSep)+" / "+Alltrim(cEtiProd)
+					VtAlert(cMsg,"Aviso",.t.,4000,4)
+					//VTClear()
+					//@ 2,0 VTSay cMsg //"Informe o codigo"
+					//@ 3,0 VTSay cEtiProd //"da divergencia:"
+					//VtRead()
+					Break
+				Else
+					_nQtdSep := 0
 					Do While _TRB01->(!Eof())
-						_nReg 	  := _TRB01->REG
-						nSaldoCB8 := _TRB01->SALDO
-						DbSelectArea("CB8")
-						DbGoTo(_nReg)
-						If ! CBProdLib(CB8->CB8_LOCAL,CB8->CB8_PROD)
-							cMsg:=""
-							Break
-						EndIf
-						If nSaldoCB8 < nQtdeT
-							nQtdeO := nSaldoCB8
-							nQtdeT -= nSaldoCB8
-						Else
-							nQtdeO := nQtdeT
-							nQtdeT := 0
-						EndIf
-						RecLock("CB8",.F.)
-						CB8->CB8_SALDOS -= nQtdeO
-						CB8->(MsUnlock())
-						If CB8->CB8_SALDOS > 0
-							Reclock("CB7",.f.)
-							CB7->CB7_STATUS := "1"  // inicio separacao
-							CB7->(MsUnLock())
-							//Else
-							//Reclock("CB7",.f.)
-							//CB7->CB7_STATUS := "9"  // Final separacao
-							//CB7->(MsUnLock())
-						EndIf
-//felipe
+						_nQtdSep += _TRB01->SALDO
 						_TRB01->(DbSkip())
 					EndDo
-				Else
-					cMsg 	:= "Quantidade maior que necessario"
-					lErrQTD := .t.
-					nQtde 	:= 1
-					Break
+					If _nQtdSep > 0
+						If _nQtdSep >= nQtdeT
+							DbSelectArea("_TRB01")
+							DbGoTop()
+							Do While _TRB01->(!Eof())
+								_nReg 	  := _TRB01->REG
+								nSaldoCB8 := _TRB01->SALDO
+								DbSelectArea("CB8")
+								DbGoTo(_nReg)
+								If ! CBProdLib(CB8->CB8_LOCAL,CB8->CB8_PROD)
+									cMsg:=""
+									Break
+								EndIf
+								If nSaldoCB8 < nQtdeT
+									nQtdeO := nSaldoCB8
+									nQtdeT -= nSaldoCB8
+								Else
+									nQtdeO := nQtdeT
+									nQtdeT := 0
+								EndIf
+								RecLock("CB8",.F.)
+								CB8->CB8_SALDOS -= nQtdeO
+								//CB8->CB8_SALDOE += nQtdeO
+								CB8->(MsUnlock())
+								If CB8->CB8_SALDOS > 0
+									Reclock("CB7",.f.)
+									CB7->CB7_STATUS := "1"  // inicio separacao
+									CB7->(MsUnLock())
+								Else
+									_cQuery := " SELECT SUM(CB8_SALDOS) AS SALDO, CB8.R_E_C_N_O_ AS REG FROM CB8010 CB8 "
+									_cQuery += " WHERE CB8_FILIAL = '"+xFilial("CB8")+"' "
+									_cQuery += " AND CB8_ORDSEP = '"+cCodSep+"' "
+									_cQuery += " AND CB8_SALDOS > 0 "
+									_cQuery += " AND CB8.D_E_L_E_T_ <> '*' "
+									_cQuery += " GROUP BY CB8.R_E_C_N_O_
+									DbUseArea(.t., 'TOPCONN', TcGenQry (,, _CQUERY), "_TRB02", .f., .t.)
+									DbSelectArea("_TRB02")
+									DbGoTop()
+									If _TRB02->(Eof())
+										DbSelectArea("CB7")
+										Reclock("CB7",.f.)
+										CB7->CB7_STATUS := "9"  // Final separacao
+										CB7->(MsUnLock())
+									EndIf
+									DbSelectArea("_TRB02")
+									_TRB02->(DbCloseArea())
+								EndIf
+								_TRB01->(DbSkip())
+							EndDo
+						Else
+							cMsg 	:= "Quantidade maior que necessario"
+							lErrQTD := .t.
+							nQtde 	:= 1
+							Break
+						EndIf
+					Else
+						VtAlert("Produto ja lido","Aviso",.t.,4000,4)
+					EndIf
 				EndIf
-			EndIf
-			DbSelectArea("_TRB01")
-			_TRB01->(DbCloseArea())
-			//Next nP
+				DbSelectArea("_TRB01")
+				_TRB01->(DbCloseArea())
+				//Next nP
 
-			RECOVER
-			//If ! Empty(cMsg)
+				RECOVER
+				//If ! Empty(cMsg)
 				//VtAlert(cMsg,"Aviso",.t.,4000,4) //"Aviso"
-			//EndIf
-			VtClearGet("cEtiProd")
-			VtGetSetFocus("cEtiProd")
-			If !UsaCB0("01") .and. lForcaQtd .and. lErrQTD
-				VtGetSetFocus("nQtde")
-			EndIf
-			Return .f.
-		End Sequence
-	Else
-		VtAlert("DUN Invalido","Aviso",.t.,4000,4) //"Aviso"
+				//EndIf
+				VtClearGet("cEtiProd")
+				VtGetSetFocus("cEtiProd")
+				If !UsaCB0("01") .and. lForcaQtd .and. lErrQTD
+					VtGetSetFocus("nQtde")
+				EndIf
+				Return .f.
+			End Sequence
+		Else
+			VtAlert("DUN Invalido","Aviso",.t.,4000,4) //"Aviso"
+		EndIf
 	EndIf
-
 Return .t.
 
 /*
@@ -1359,7 +1370,6 @@ Return .t.
 ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
 */
 Static Function PulaItem()
-	Local i
 	Local cChave	:= CB8->(CB8_LOCAL+CB8_LCALIZ+CB8_PROD+CB8_LOTECT+CB8_NUMLOT+CB8_NUMSER)
 	Local cChSeek	:= CB8->(CB8_ORDSEP+CB8_ITEM+CB8_PROD+CB8_LOCAL+CB8_LCALIZ+CB8_LOTECT+CB8_NUMLOT+CB8_NUMSER)
 	Local nRecCB8	:= CB8->(RecNo())
@@ -1576,12 +1586,10 @@ Return(lRet)
 */
 Static Function EstEnd()
 	Local aTela
-	Local cEtiqEnd   := Space(20)
 	Local cArmazem   := Space(Tamsx3("B1_LOCPAD")[1])
 	Local cEndereco  := Space(TamSX3("BF_LOCALIZ")[1])
 	Local cProduto   := Space(48)
 	Local cIdVol     := Space(10)
-	Local cSubVolume := Space(10)
 	Local nQtde      := 1
 	Local nOpc       := 1
 	Local cKey21
@@ -2031,7 +2039,6 @@ Static Function EstProd()
 	Local cEnd2     := Space(15)
 	Local cProduto  := Space(48)
 	Local cIdVol    := Space(10)
-	Local cSubVolume:= Space(10)
 	Local cEtiqueta := Space(20)
 	Local cLote     := Space(TamSX3("B8_LOTECTL")[1])
 	Local cSLote    := Space(TamSX3("B8_NUMLOTE")[1])
@@ -2254,7 +2261,7 @@ Static Function EstItemPv()
 	Local  aSvSC6       := SC6->(GetArea())
 	Local  aSvSB7       := SB7->(GetArea())
 	Local  aItensDiverg := {}
-	Local  nPos, i
+	Local  i
 	Local  cPRESEP := CB7->CB7_PRESEP
 
 // Verifica se a Ordem de separacao possui pre-separacao se possuir verificar se existe divergencia
@@ -2349,7 +2356,7 @@ Return
 ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
 */
 Static Function Libera(aItensDiverg)
-	Local nX,ny,nz
+	Local nX,ny
 	Local nQtdLib   := 0
 	Local lContinua := .f.
 	Local aPedidos  := {}
@@ -2579,18 +2586,13 @@ Return aEmp
 ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
 */
 Static Function RequisitOP(lEstorno,lApp)
-	Local aMata     := {}
 	Local aEmp      := {}
-	Local dValid    := ctod('')
 	Local nModuloOld:= nModulo
-	Local aCab      := {}
 	Local aCB8      := CB8->(GetArea())
 	Local aSD3      := SD3->(GetArea())
 	Local cTRT      := ""
 	Local n1        := 0
-	Local aRetPESD3 := {}
 	Local lEstReq   := .F.
-	Local lACD166RQ := ExistBlock("ACD166RQ")
 
 	Private nModulo  := 4
 	Private cTM      := GETMV("MV_CBREQD3")
@@ -2821,14 +2823,12 @@ Static Function SubNSer(cLote,cSLote,cEndNew,cNumSer,cSequen)
 	Local aSvSB7		:= SB7->(GetArea())
 	Local aSvCB9		:= CB9->(GetArea())
 	Local aCampos		:= {}
-	Local aDados		:= {}
 	Local cAlias1 		:= "TMPNSSUG"
 	Local cAlias2 		:= "TMPNSLIDO"
 	Local nQuant 		:= 0
 	Local nQuant2       := 0
 	Local nBaixa        := 0
 	Local nBaixa2		:= 0
-	Local nPos			:= 0
 	Local nX			:= 0
 	Local lRastro		:= .F.
 
@@ -3101,8 +3101,6 @@ Static Function v166TcLote(cOrdSep)
 	Local nPos			:= 0
 	Local nSaldoLote 	:= 0
 	Local cItemAnt   	:= ""
-	Local cQuery     	:= ""
-	Local cAliasSC9  	:= ""
 
 	CB9->(DbSetOrder(1))
 	SC6->(DbSetOrder(1))
@@ -3179,10 +3177,6 @@ Realiza a avaliação da liberação/estorno
 /*/
 // -------------------------------------------------------------------------------------
 Static Function A166AvalLb(aEmp,aItensDiverg)
-
-	Local nX
-
-
 	If !Empty(aItensDiverg)
 
 		SC9->(DbSetOrder(1))
@@ -3323,10 +3317,8 @@ Static Function A166MtaEst(nQtde,cArmazem,cEndereco,cVolume,nOpc)
 
 	Local aSave	     := VTSave()
 	Local aAreaAnt   := GetArea()
-	Local cEtiqEnd   := Space(20)
 	Local cProduto   := Space(48)
 	Local cIdVol     := Space(10)
-	Local lLocaliz := SuperGetMV("MV_LOCALIZ") == "S"
 	IF !Type("lVT100B") == "L"
 		Private lVT100B := .F.
 	EndIf
