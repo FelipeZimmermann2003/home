@@ -52,6 +52,9 @@ Ir Para:
 - Validarei com o usuário requisitante se esta ok
 - Farei um merge para branch main e deploy em produção.
 
+#commit atualiza no seu repositório o pull request, você solicita que alteração seja aceita no branch master.
+
+
 ## Segue o passo a passo para redeploy de pacote:
   
 - Promover o rpo de: prod para: DevUniagro  
@@ -60,4 +63,4 @@ Ir Para:
 - Promove o fonte para: Prod
 
 
-
+ 
