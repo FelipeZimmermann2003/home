@@ -49,7 +49,8 @@ User Function UNIA024()
 	end
 
 	If nOpca==1 //ok
-		RptStatus({|| fGeraComis(cPerg)}, "Aguarde...", "Processando...")
+		//RptStatus({|| }, "Aguarde...", "Processando...")
+		fGeraComis(cPerg)
 	end
 
 Return
@@ -60,7 +61,7 @@ Static Function fGeraComis(cPerg)
 	Local cSelect   :='', cQuery:=''
 	Local nTotLines :=0
 	Local nQuantos	:=0
-
+	Local nx		:= 1
 	IF !msgbox("Deseja iniciar o calculo da comissão ?","Atenção","YESNO")
 		return .f.
 	End
@@ -73,7 +74,7 @@ Static Function fGeraComis(cPerg)
 	cQuery+=" AND E3_VEND BETWEEN '"+MV_PAR03+"' AND '"+MV_PAR04+"' "+_CRLF
 	cQuery+=" AND E3_ORIGLAN='1'"+_CRLF
 	cQuery+=" AND E3_DATA=''"+_CRLF
-	cQuery+=" AND E3_FILIAL='"+xFilial('SE3')+"' "
+	//cQuery+=" AND E3_FILIAL='"+xFilial('SE3')+"' "
 
 	MemoWrite("\LOGS\unia024DEL.SQL",cQuery)
 
@@ -84,7 +85,19 @@ Static Function fGeraComis(cPerg)
 	End
 
 	//incluindo os registros
+	_cFilial := cFilAnt
+	_aFilial := FWLoadSM0()
+	For nx:=1 To Len(_aFilial)
+		If _aFilial[nx,1] <> "99"
+			cFilAnt := _aFilial[nx,2]
+			FWMsgRun(, {|oSay| xCalc() },"Rodando Filial "+cFilAnt,"Calculando..." )
+		EndIf
+	Next
+	cFilAnt := _cFilial
+	MsgInfo('Calculo Finalizado', 'Finalizado')
+return
 
+Static Function xCalc()
 	cSelect := " SELECT SE3.* "+_CRLF
 	cSelect += " FROM " + RetSqlTab("SE3,SA3") +_CRLF
 	cSelect += " WHERE " + RetSqlDel("SE3,SA3") +_CRLF
@@ -106,6 +119,7 @@ Static Function fGeraComis(cPerg)
 	cSelect += "    AND D2_CLIENTE=F2_CLIENTE"+_CRLF
 	cSelect += "    AND D2_PRUNIT > D2_PRCVEN"+_CRLF
 	cSelect += "    AND D2_LOJA=F2_LOJA"+_CRLF
+	//cSelect += "    AND D2_DOC = '000026522' "+_CRLF
 	cSelect += "    AND D2_PEDIDO=C5_NUM ) > 0"+_CRLF
 	cSelect += " ORDER BY E3_VEND  "
 
@@ -114,7 +128,7 @@ Static Function fGeraComis(cPerg)
 	dbUseArea( .T.,"TOPCONN", TCGENQRY(,,cSelect),"TRB", .F., .T.)
 	Count To nTotLines
 
-	SetRegua(nTotLines)
+	//SetRegua(nTotLines)
 
 	DbSelectArea( "TRB" )
 	DbGoTop()
@@ -127,8 +141,8 @@ Static Function fGeraComis(cPerg)
 	While !eof()
 		//alert('processando '+TRB->E3_NUM+' '+TRB->E3_PREFIXO+' '+E3_TIPO)
 
-		IncRegua()
-		nQuantos++
+		//IncRegua()
+		//nQuantos++
 
 		nDecresc	:=0
 		nTotDecr	:=0
@@ -146,7 +160,7 @@ Static Function fGeraComis(cPerg)
 			//alert('pulei 1 '+TRB->E3_NUM+TRB->E3_SERIE)
 			DbSelectArea( "TRB" )
 			dbSkip()
-			
+
 			loop
 		end
 		cLog+=_CRLF
@@ -234,7 +248,7 @@ Static Function fGeraComis(cPerg)
 		cLog+='TOTAL DE DESCONTO DE COMISSAO;TOTAL DOS ITENS ; % DE DECRESCIMO TOTAL '+_CRLF
 		cLog+=CValToChar(nTotDecr)+';'+CValToChar(nD2Total)+';'+CValToChar(nPercDec*100)+_CRLF
 
-		fSavNewSE3(nPercDec,TRB->E3_BASE,nTotDecr)
+		fSavNewSE3(nPercDec,nD2Total,nTotDecr)
 
 		If SuperGetMV('ES_LGCOMDE',.f.,.f.)
 			//alert('vou grava')
@@ -246,12 +260,9 @@ Static Function fGeraComis(cPerg)
 
 	end
 	DbSelectArea( "TRB" )
-
 	dbcloseArea()
-
-	MsgInfo('Calculo Finalizado', 'Finalizado')
-return
-
+	DbSelectArea("SE3")
+Return
 //-------------------------------------------------------------------------------------
 Static Function fSavNewSe3(_XPORC,_XTOT,_XDESC)
 //--------------------------------------------------------------------------------------
