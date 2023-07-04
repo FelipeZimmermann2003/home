@@ -88,7 +88,7 @@ Static Function fGeraComis(cPerg)
 	_cFilial := cFilAnt
 	_aFilial := FWLoadSM0()
 	For nx:=1 To Len(_aFilial)
-		If _aFilial[nx,1] <> "99"
+		If _aFilial[nx,1] <> "99" //.And. _aFilial[nx,2] == '0105'
 			cFilAnt := _aFilial[nx,2]
 			FWMsgRun(, {|oSay| xCalc() },"Rodando Filial "+cFilAnt,"Calculando..." )
 		EndIf
@@ -119,7 +119,7 @@ Static Function xCalc()
 	cSelect += "    AND D2_CLIENTE=F2_CLIENTE"+_CRLF
 	cSelect += "    AND D2_PRUNIT > D2_PRCVEN"+_CRLF
 	cSelect += "    AND D2_LOJA=F2_LOJA"+_CRLF
-	//cSelect += "    AND D2_DOC = '000026522' "+_CRLF
+	//cSelect += "    AND D2_DOC = '000026577' "+_CRLF
 	cSelect += "    AND D2_PEDIDO=C5_NUM ) > 0"+_CRLF
 	cSelect += " ORDER BY E3_VEND  "
 
@@ -135,6 +135,9 @@ Static Function xCalc()
 
 	If Eof()
 		Msginfo('Não foram encontradas comissões dentro dos parâmetros informados.')
+		DbSelectArea( "TRB" )
+		dbcloseArea()
+		DbSelectArea("SE3")
 		return
 	End
 
@@ -248,7 +251,7 @@ Static Function xCalc()
 		cLog+='TOTAL DE DESCONTO DE COMISSAO;TOTAL DOS ITENS ; % DE DECRESCIMO TOTAL '+_CRLF
 		cLog+=CValToChar(nTotDecr)+';'+CValToChar(nD2Total)+';'+CValToChar(nPercDec*100)+_CRLF
 
-		fSavNewSE3(nPercDec,nD2Total,nTotDecr)
+		fSavNewSE3(nPercDec,(nD2Total*nPercSE1),nTotDecr)
 
 		If SuperGetMV('ES_LGCOMDE',.f.,.f.)
 			//alert('vou grava')
