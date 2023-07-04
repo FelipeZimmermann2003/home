@@ -6,7 +6,7 @@
 +-----------+-----------+-------+-------------------------------------+------+----------+
 | Funcao    | UNIA024   | Autor | Manoel M Mariante                   | Data |DEZ/2021  |
 |-----------+-----------+-------+-------------------------------------+------+----------|
-| Descricao | Esta rotina tem o objetivo GeraÁ„o descontos de comissıes	                |
+| Descricao | Esta rotina tem o objetivo Gera√ß√£o descontos de comiss√µes	                |
 |           |                                                                           |
 |           |                                                                           |
 |-----------+---------------------------------------------------------------------------|
@@ -19,22 +19,22 @@ User Function UNIA024()
 	Local cPerg             :='UNIA024'
 	Private aSays           := { }
 	Private aButtons        := { }
-	Private cCadastro       := OemToAnsi('Calculo da Comiss„o Decrescente')
+	Private cCadastro       := OemToAnsi('Calculo da Comiss√£o Decrescente')
 	Private nOpca           := 0
 	Private lOk             :=.t.
 	Private _CRLF           :=CHR(13)+chr(10)
 	Private lSendMail		:=.f.
 	Private aRelLog			:={}
 
-	UNIPUTSX1( cPerg,'01','Emiss„o de?'			        ,'MV_PAR01','D',08,0,'G','',/*DEF01*/ '', /*DEF02*/ '',/*DEF03*/ '',/*DEF04*/ '',/*DEF05*/ '', 'mv_ch2',''   )
-	UNIPUTSX1( cPerg,'02','Emiss„o AtÈ?'		        ,'MV_PAR02','D',08,0,'G','',/*DEF01*/ '', /*DEF02*/ '',/*DEF03*/ '',/*DEF04*/ '',/*DEF05*/ '', 'mv_ch2',''   )
+	UNIPUTSX1( cPerg,'01','Emiss√£o de?'			        ,'MV_PAR01','D',08,0,'G','',/*DEF01*/ '', /*DEF02*/ '',/*DEF03*/ '',/*DEF04*/ '',/*DEF05*/ '', 'mv_ch2',''   )
+	UNIPUTSX1( cPerg,'02','Emiss√£o At√©?'		        ,'MV_PAR02','D',08,0,'G','',/*DEF01*/ '', /*DEF02*/ '',/*DEF03*/ '',/*DEF04*/ '',/*DEF05*/ '', 'mv_ch2',''   )
 	UNIPUTSX1( cPerg,'03','Do Vendedor ?'       		,'MV_PAR03','C',06,0,'G','',''          , ''          ,''          ,/*DEF04*/ '',/*DEF05*/ '', 'mv_ch4','SA3')
-	UNIPUTSX1( cPerg,'04','AtÈ o Vendedor ?'    		,'MV_PAR04','C',06,0,'G','',''         	, ''          ,''          ,/*DEF04*/ '',/*DEF05*/ '', 'mv_ch5','SA3')
+	UNIPUTSX1( cPerg,'04','At√© o Vendedor ?'    		,'MV_PAR04','C',06,0,'G','',''         	, ''          ,''          ,/*DEF04*/ '',/*DEF05*/ '', 'mv_ch5','SA3')
 	//UNIPUTSX1( cPerg,'13','Pasta/Nome Arquivo Excel?'	,'MV_PAR13','C',99,0,'G','',''			, ''     	  ,''          			,/*DEF04*/ '',/*DEF05*/ '', 'mv_ch6','DIR')
 
 	Pergunte(cPerg,.f.)
 
-	AADD(aSays,OemToAnsi('Esta rotina tem o objetivo gerar os valores de comiss„o decrescente' ) )
+	AADD(aSays,OemToAnsi('Esta rotina tem o objetivo gerar os valores de comiss√£o decrescente' ) )
 	AADD(aSays,OemToAnsi('' ) )
 
 	AADD(aButtons, { 5,.T.,{|o| lOk:=Pergunte(cPerg,.t.)     }} )	//parametros
@@ -61,7 +61,7 @@ Static Function fGeraComis(cPerg)
 	Local nTotLines :=0
 	Local nQuantos	:=0
 
-	IF !msgbox("Deseja iniciar o calculo da comiss„o ?","AtenÁ„o","YESNO")
+	IF !msgbox("Deseja iniciar o calculo da comiss√£o ?","Aten√ß√£o","YESNO")
 		return .f.
 	End
 
@@ -72,25 +72,28 @@ Static Function fGeraComis(cPerg)
 	cQuery+=" WHERE E3_EMISSAO  BETWEEN '"+DTOS(MV_PAR01)+"' AND '"+DTOS(MV_PAR02)+"'"+_CRLF
 	cQuery+=" AND E3_VEND BETWEEN '"+MV_PAR03+"' AND '"+MV_PAR04+"' "+_CRLF
 	cQuery+=" AND E3_ORIGLAN='1'"+_CRLF
+	cQuery+=" AND E3_DATA=''"+_CRLF
 	cQuery+=" AND E3_FILIAL='"+xFilial('SE3')+"' "
 
 	MemoWrite("\LOGS\unia024DEL.SQL",cQuery)
 
 	nRet:=TcSqlExec(cQuery)
 	If nRet<0
-		MsgInfo("AtenÁ„o, erro na exclus„o das comissıes ","Erro na Exclus„o")
+		MsgInfo("Aten√ß√£o, erro na exclus√£o das comiss√µes ","Erro na Exclus√£o")
 		Return
 	End
 
 	//incluindo os registros
 
 	cSelect := " SELECT SE3.* "+_CRLF
-	cSelect += " FROM " + RetSqlTab("SE3") +_CRLF
-	cSelect += " WHERE " + RetSqlDel("SE3") +_CRLF
-	cSelect += "  AND " + RetSqlFil("SE3") +_CRLF
+	cSelect += " FROM " + RetSqlTab("SE3,SA3") +_CRLF
+	cSelect += " WHERE " + RetSqlDel("SE3,SA3") +_CRLF
+	cSelect += "  AND " + RetSqlFil("SE3,SA3") +_CRLF
 	cSelect += "  AND E3_EMISSAO  BETWEEN '"+DTOS(MV_PAR01)+"' AND '"+DTOS(MV_PAR02)+"'"+_CRLF
 	cSelect += "  AND E3_VEND BETWEEN '"+MV_PAR03+"' AND '"+MV_PAR04+"' "+_CRLF
 	cSelect += "  AND E3_COMIS<>0 "+_CRLF
+	cSelect += "  AND E3_VEND=A3_COD "+_CRLF
+	cSelect += "  AND A3_COMIS=0 "+_CRLF
 	cSelect += "  AND E3_TIPO ='NF' "+_CRLF
 	cSelect += "  AND (SELECT COUNT(*) "
 	cSelect += "    FROM " + RetSqlTab("SF2,SD2,SC5") +_CRLF
@@ -117,7 +120,7 @@ Static Function fGeraComis(cPerg)
 	DbGoTop()
 
 	If Eof()
-		Msginfo('N„o foram encontradas comissıes dentro dos par‚metros informados.')
+		Msginfo('N√£o foram encontradas comiss√µes dentro dos par√¢metros informados.')
 		return
 	End
 
@@ -170,16 +173,17 @@ Static Function fGeraComis(cPerg)
 				cLog+='PEDIDO;'+SD2->D2_PEDIDO+_CRLF
 
 				cLog+=_CRLF
-				cLog+='PRODUTO;TABELA;% DE DESCONTO; TOTAL DO ITEM;% DESCRESCIMO;OBSERVA«√O'+_CRLF
+				cLog+='PRODUTO;TABELA;% DE DESCONTO; TOTAL DO ITEM;% DESCRESCIMO;OBSERVA√á√ÉO'+_CRLF
 
 				lFirst:=.f.
 			end
 
+
 			nPerDesc	:=(1-(SD2->D2_PRCVEN / SD2->D2_PRUNIT))*100
 
-			nPrcIncent	:=Posicione('SB1',1,xFilial('SB1')+SD2->D2_COD,'B1_PRCINCE') //PRE«O DE INCENTIVO
+			nPrcIncent	:=Posicione('SB1',1,xFilial('SB1')+SD2->D2_COD,'B1_PRCINCE') //PRE√áO DE INCENTIVO
 
-			If nPerDesc <=nPrcIncent //o desconto concendido ao cliente est· dentro do % de incentivo, n„o ter· reduÁ„o da comiss„o				cLog+=SD2->D2_COD+';'+SC5->C5_TABELA+';'+CValToChar(nPerDesc)+';'+CValToChar(SD2->D2_TOTAL)+';'+CValToChar(0*100)+';N√O POSSUI REGRA PARA CALCULO DE DESCONTO DECRESCENTE+_CRLF
+			If nPerDesc <=nPrcIncent //o desconto concendido ao cliente est√° dentro do % de incentivo, n√£o ter√° redu√ß√£o da comiss√£o				cLog+=SD2->D2_COD+';'+SC5->C5_TABELA+';'+CValToChar(nPerDesc)+';'+CValToChar(SD2->D2_TOTAL)+';'+CValToChar(0*100)+';N√ÉO POSSUI REGRA PARA CALCULO DE DESCONTO DECRESCENTE+_CRLF
 				//alert('pulei 3')
 				cLog+=SD2->D2_COD+';'+SC5->C5_TABELA+';'+CValToChar(nPerDesc)+';'+CValToChar(SD2->D2_TOTAL)+';'+CValToChar(0*100)+';PRODUTO SOB INCENTIVO DE '+CValToChar(nPrcIncent)+'%'+_CRLF
 
@@ -210,7 +214,7 @@ Static Function fGeraComis(cPerg)
 				cPrdLog+=alltrim(SD2->D2_COD)+'='+ALLTRIM(str(nPerDesc,6,2))+'%->'+ALLTRIM(str(TRX->Z1_DECRESC,6,2))+'%,'
 			else
 				//alert('pulei 6')
-				cLog+=SD2->D2_COD+';'+SC5->C5_TABELA+';'+CValToChar(nPerDesc)+';'+CValToChar(SD2->D2_TOTAL)+';'+CValToChar(0*100)+';N√O POSSUI REGRA PARA CALCULO DE DESCONTO DECRESCENTE+_CRLF
+				cLog+=SD2->D2_COD+';'+SC5->C5_TABELA+';'+CValToChar(nPerDesc)+';'+CValToChar(SD2->D2_TOTAL)+';'+CValToChar(0*100)+';N√ÉO POSSUI REGRA PARA CALCULO DE DESCONTO DECRESCENTE+_CRLF
 
 			END
 
@@ -220,13 +224,17 @@ Static Function fGeraComis(cPerg)
 			DbSelectArea('SD2')
 			dbSkip()
 		end
+		nPercSE1	:=TRB->E3_BASE / SF2->F2_VALFAT //percentual referente ao valor da parcela
+
 		nPercDec	:=nTotDecr/nD2Total
 		cLog+=_CRLF
+
+		nTotDecr	:=nTotDecr * nPercSE1
 
 		cLog+='TOTAL DE DESCONTO DE COMISSAO;TOTAL DOS ITENS ; % DE DECRESCIMO TOTAL '+_CRLF
 		cLog+=CValToChar(nTotDecr)+';'+CValToChar(nD2Total)+';'+CValToChar(nPercDec*100)+_CRLF
 
-		fSavNewSE3(nPercDec,nD2Total,nTotDecr)
+		fSavNewSE3(nPercDec,TRB->E3_BASE,nTotDecr)
 
 		If SuperGetMV('ES_LGCOMDE',.f.,.f.)
 			//alert('vou grava')
@@ -335,11 +343,11 @@ Static Function fGeraExcel(aRelato,aLog,dVcto)
 		cArquivo+='.xlsx'
 	End
 
-	//Criando o objeto que ir· gerar o conte˙do do Excel
+	//Criando o objeto que ir√° gerar o conte√∫do do Excel
 	oFWMsExcel := FwMsExcelXlsx():New()
 
 	//crianda a aba 1 - lista das comissoes
-	oFWMsExcel:AddworkSheet(cAba) //N„o utilizar n˙mero junto com sinal de menos. Ex.: 1-
+	oFWMsExcel:AddworkSheet(cAba) //N√£o utilizar n√∫mero junto com sinal de menos. Ex.: 1-
 
 	//Criando a Tabela dentro da aba
 	oFWMsExcel:AddTable(cAba,_cNome)
@@ -347,7 +355,7 @@ Static Function fGeraExcel(aRelato,aLog,dVcto)
 	//Criando Colunas da tabelas
 	For nH:=1 to Len(aCabec)
 
-		oFWMsExcel:AddColumn(cAba,_cNome,aCabec[nH,1],2,aCabec[nH,3]) //Codigo de formataÁ„o ( 1-General,2-Number,3-Monet·rio,4-DateTime )
+		oFWMsExcel:AddColumn(cAba,_cNome,aCabec[nH,1],2,aCabec[nH,3]) //Codigo de formata√ß√£o ( 1-General,2-Number,3-Monet√°rio,4-DateTime )
 
 	Next
 	lLin:=.t.
@@ -374,14 +382,14 @@ Static Function fGeraExcel(aRelato,aLog,dVcto)
 	//crianda a aba 2 = LOG DE PROCESSAMENTO
 	cAba	:="Log"
 	_cNome	:="Log de Processamento Em "+dtoc(dDataBase)
-	oFWMsExcel:AddworkSheet(cAba) //N„o utilizar n˙mero junto com sinal de menos. Ex.: 1-
+	oFWMsExcel:AddworkSheet(cAba) //N√£o utilizar n√∫mero junto com sinal de menos. Ex.: 1-
 
 	//Criando a Tabela dentro da aba
 	oFWMsExcel:AddTable(cAba,_cNome)
 
 	//Criando Colunas da tabelas
 
-	oFWMsExcel:AddColumn(cAba,_cNome,"Log",1,1) //Codigo de formataÁ„o ( 1-General,2-Number,3-Monet·rio,4-DateTime )
+	oFWMsExcel:AddColumn(cAba,_cNome,"Log",1,1) //Codigo de formata√ß√£o ( 1-General,2-Number,3-Monet√°rio,4-DateTime )
 
 	For nL:=1 to Len(aLog)
 		oFWMsExcel:AddRow(cAba,_cNome,{aLog[nL]	})
@@ -393,7 +401,7 @@ Static Function fGeraExcel(aRelato,aLog,dVcto)
 	If file(cArquivo)
 		MsgInfo('Planilha salva: '+cArquivo)
 		//Abrindo o excel e abrindo o arquivo xml
-		oExcel := MsExcel():New()             //Abre uma nova conex„o com Excel
+		oExcel := MsExcel():New()             //Abre uma nova conex√£o com Excel
 		oExcel:WorkBooks:Open(cArquivo)     //Abre uma planilha
 		oExcel:SetVisible(.T.)                 //Visualiza a planilha
 
