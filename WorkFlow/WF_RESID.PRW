@@ -5,12 +5,13 @@
 #INCLUDE "TBICONN.CH"
 #INCLUDE "FILEIO.CH"
 
-User Function WF_RESID(_xcFilial)
-	Local nHandle   := 0
-    Local _cFilial  := iif(_xcFilial==Nil,"00",_xcFilial)
+User Function WF_RESID(_cEmp,_cFil)
+	Local nHandle   := 0	
+	_cEmp := Iif(ValType(_cEmp)=="C",_cEmp,_cEmp[1])
+	_cFil := Iif(ValType(_cFil)=="C",_cFil,_cEmp[2])
 	RpcSetType(3)  // nao consome licenca
 
-	PREPARE ENVIRONMENT EMPRESA "01" FILIAL _cFilial TABLES "SM0","SX5","SB1","SB2","SD2","SF2"
+	PREPARE ENVIRONMENT EMPRESA _cEmp FILIAL _cFil TABLES "SM0","SX5","SB1","SB2","SD2","SF2"
 
 	cQuery  := " "
 	cQuery  += " SELECT C6_NUM, C6_ITEM, C6_PRODUTO, C6_LOCAL, C6_QTDVEN, C6_QTDENT, F4_ESTOQUE, F4_PODER3 "
@@ -18,15 +19,15 @@ User Function WF_RESID(_xcFilial)
 	cQuery  += " WHERE C6_FILIAL 	= '"+xFilial("SC6")+"' "
 	cQuery  += " AND C6_BLQ         <> 'R' "
 	cQuery  += " AND C6_QTDVEN      > C6_QTDENT "
-	cQuery  += " AND C6_QTDENT      > 0 "
+	cQuery  += " AND (SELECT SUM(C6_QTDENT) FROM "+RetSqlName("SC6")+" C6 WHERE C6.D_E_L_E_T_ <> '*' AND C6.C6_FILIAL+C6.C6_NUM = SC6.C6_FILIAL+SC6.C6_NUM) > 0 "
 	cQuery  += " AND C6_TES         = F4_CODIGO "
 	cQuery  += " AND F4_ESTOQUE     = 'S' "
     cQuery  += " AND C5_NUM         = C6_NUM "
-    cQuery  += " AND C5_NOTA        = '' "
+    cQuery  += " AND C5_NOTA        = ' ' "
     cQuery  += " AND C5_TIPO        = 'N' "
-	cQuery  += " AND SC5.D_E_L_E_T_ = '' "
-    cQuery  += " AND SC6.D_E_L_E_T_ = '' "
-	cQuery  += " AND SF4.D_E_L_E_T_ = '' "
+	cQuery  += " AND SC5.D_E_L_E_T_ = ' ' "
+    cQuery  += " AND SC6.D_E_L_E_T_ = ' ' "
+	cQuery  += " AND SF4.D_E_L_E_T_ = ' ' "
 	cQuery  += " AND C6_QTDVEN      > 10 "
 	cQuery  += " AND (C6_QTDVEN - C6_QTDENT) <= 0.600 "
 	cQuery  += " ORDER BY 1, 2, 3 "
@@ -47,7 +48,7 @@ User Function WF_RESID(_xcFilial)
 			_cHtml:= '<table height="15" cellspacing="1" width="100%" border="1" cellspacing="0" bordercolordark="white" bordercolorlight="black">'
 			_cHtml+= '    <tr>'
 			_cHtml+= '    	 <td bordercolor="white" bordercolorlight="white" bordercolordark="white" align="center" bgcolor="white" height="0" width="1200">
-			_cHtml+= '    	    <p><span style="font-size: 8pt;"><font color="#4c4c4c" face="Verdana">'+OemToAnsi( "<BR> <big><big><big><big>"+_cCabec+"</big></big></big></big>")
+			_cHtml+= '    	    <p><span style="font-size: 8pt;"><font color="#4c4c4c" face="Verdana">'+OemToAnsi("<BR> <big><big><big><big>"+_cCabec+"</big></big></big></big>")
 			_cHtml+= '			</font></span></p>'
 			_cHtml+= '        </td>'
 			_cHtml+= '	</tr>'
@@ -111,12 +112,13 @@ User Function WF_RESID(_xcFilial)
 			_aArq := {}
 
 			AADD(_aArq  ,cAnexos)
-			_xEmail := 'comercial@zandei.com.br;comercial3@zandei.com.br;daniele@zandei.com.br;atendimento@zandei.com.br'
+			_xEmail := 'felipe.zimmermann06@gmail.com'
 
 			_mens:= 'Em anexo arquivo que contem um '+_cCabec+chr(13)+Chr(10)
 			_mens+= 'Enviando E-Mail para: '+Chr(13)+_xEmail+Chr(13)
 
-			U_MZ_ENMAIL(_mens,_cCabec,_xEmail,"","",_aArq)
+			//U_MZ_ENMAIL(_mens,_cCabec,_xEmail,"","",_aArq)
+			U_FZ_ENMAIL(_mens, _cCabec, _xEmail, _aArq)
 
 		EndIf
 		_SC6->(DbCloseArea())
@@ -127,3 +129,147 @@ User Function WF_RESID(_xcFilial)
 	RESET ENVIRONMENT
 
 Return
+
+Static Function FZ_ENMAIL(cEmails, cTitulo, cTexto, cAnexo, cCCEmails, cCOEmails, cConta, cPass, cRemetente, cServer, nPorta, lSSL, lTSL, SMTPTime)
+
+	Local oServer
+	Local oMessage
+	Local lRet			:= .T.
+	Local aAnexos     	:= {}
+	Local cTxtTMP     	:= ""
+	Local i				:= 0
+	Local cMessage 		:= ""
+
+	Default cEmails		:= ""
+	Default cTitulo		:= ""
+	Default cTexto		:= ""
+	Default cAnexo		:= ""
+	Default cCCEmails	:= "" //E-mail Cópia
+	Default cCOEmails	:= "" //E-mail Cópia Oculta
+	Default cConta   	:= SuperGetMv("MV_RELACNT")
+	Default cPass 		:= SuperGetMv("MV_RELPSW")
+	Default cRemetente	:= SuperGetMv("MV_RELACNT")
+	Default cServer    	:= Iif(!":"$SuperGetMv("MV_RELSERV"),SuperGetMv("MV_RELSERV"),SubStr(SuperGetMv("MV_RELSERV"),1,AT(":",SuperGetMv("MV_RELSERV"))-1))
+	Default nPorta      := Val(iif(!":"$SuperGetMv("MV_RELSERV"),"587",SubStr(SuperGetMv("MV_RELSERV"),AT(":",SuperGetMv("MV_RELSERV"))+1,len(SuperGetMv("MV_RELSERV")))))
+	Default lSSL       	:= SuperGetMv("MV_RELSSL")
+	Default lTSL       	:= SuperGetMv("MV_RELTLS")
+	Default SMTPTime   	:= SuperGetMv("MV_RELTIME")
+   
+
+	//Cria a conexão com o server STMP ( Envio de e-mail )
+	oServer := tMailManager():New()
+	oServer:SetUseSSL(lSSL)
+	oServer:SetUseTLS(lTSL)
+	oServer:Init( "", cServer, cConta, cPass, 0, nPorta)
+	
+	//seta um tempo de time out com servidor de 1min
+	If oServer:SetSmtpTimeOut(SMTPTime) != 0
+		cMessage := "Falha ao setar o time out do SMTP."+ CRLF   
+		FWLogMsg("WARN", "", "UNIAP001", "UNIAP01C", "", "", cMessage, 0, 0)
+
+		lRet := .F.
+		Return lRet
+	EndIf
+   
+	//realiza a conexão SMTP
+	n:=oServer:SmtpConnect()
+	cErro := oServer:GetErrorString(n)
+	If n!= 0
+		cMessage := "Falha ao conectar no SMTP."+ CRLF   
+		FWLogMsg("WARN", "", "UNIAP001", "UNIAP01C", "", "", cMessage, 0, 0)
+
+		lRet := .F.
+		Return lRet
+	EndIf
+	// Alterado a posição da autenticação após conetcar no SMTP
+	oServer:SMTPAuth(cConta, cPass)
+
+	//Apos a conexão, cria o objeto da mensagem                             
+	oMessage := tMailMessage():New()
+   
+	//Limpa o objeto
+	oMessage:Clear()
+   
+	//Popula com os dados de envio
+	oMessage:cFrom := cConta
+	oMessage:cTo := cEmails
+	
+	If !Empty(cCCEmails)
+		oMessage:cCc := cCCEmails
+	EndIf
+	
+	If !Empty(cCOEmails)	
+		oMessage:cBcc := cCOEmails
+	EndIf
+	
+	oMessage:cSubject := cTitulo
+	oMessage:cBody := cTexto
+   
+	//+----------------------------------------+   
+	//|Adiciona um attach
+	//+----------------------------------------+
+	//Verifica se existem mais de um arquivo para ser adcionado
+	//e adciona cada um idividualmente
+	If !Empty(cAnexo)
+		//Monta array de Anexos
+		If AT(";",cAnexo)>0
+			For i:=1 to Len(cAnexo)
+				If Substr(cAnexo,i,1)==";"
+					AADD(aAnexos,cTxtTmp)
+					cTxtTmp := ""
+				Else
+					cTxtTMP += Substr(cAnexo,i,1)
+				EndIF
+
+				If i == Len(cAnexo) .AND. !Empty(cTxtTmp)
+					AADD(aAnexos,cTxtTmp)
+					cTxtTmp := ""
+				EndIf
+			Next
+		
+			For i:= 1 to Len(aAnexos)
+				If oMessage:AttachFile(aAnexos[i]) < 0
+					cMessage := "Erro ao atachar o arquivo."+ CRLF   
+					FWLogMsg("WARN", "", "UNIAP001", "UNIAP01C", "", "", cMessage, 0, 0)
+
+					Return .F.
+				Else
+					//adiciona uma tag informando que é um attach e o nome do arq
+					oMessage:AddAtthTag( aAnexos[i])
+				EndIf
+			Next
+		Else
+			If oMessage:AttachFile( cAnexo ) < 0
+				cMessage := "Erro ao atachar o arquivo."+ CRLF   
+				FWLogMsg("WARN", "", "UNIAP001", "UNIAP01C", "", "", cMessage, 0, 0)
+
+				Return .F.
+			Else
+				//adiciona uma tag informando que é um attach e o nome do arq
+				oMessage:AddAtthTag(cAnexo)
+			EndIf
+		EndIf
+	EndIf
+   
+	//Envia o e-mail
+	n := oMessage:Send(oServer)
+
+	cErro := oServer:GetErrorString(n)
+
+	If n != 0
+		cMessage := "Erro ao enviar o e-mail mensagem: "+cErro+ CRLF   
+		FWLogMsg("WARN", "", "UNIAP001", "UNIAP01C", "", "", cMessage, 0, 0)
+		
+		lRet := .F.
+	EndIf
+   
+  //Desconecta do servidor
+	If oServer:SmtpDisconnect() != 0
+		cMessage := "Erro ao disconectar do servidor SMTP."+ CRLF   
+		FWLogMsg("WARN", "", "UNIAP001", "UNIAP01C", "", "", cMessage, 0, 0)
+		
+		lRet := .F.
+		Return lRet
+	EndIf
+
+Return lRet
